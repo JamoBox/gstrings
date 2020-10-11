@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
-	"os"
 )
 
 var Version string = "1.0.0"
@@ -35,10 +34,9 @@ func show_printable(pkt gopacket.Packet, matchlen int) {
 						nsrc, ndst := network.Endpoints()
 						tsrc, tdst := transport.Endpoints()
 						fmt.Printf(
-							"[%s %s %s %s %s]: ",
-							nsrc, ndst,
+							"[%s:%s → %s:%s (%s)]: ",
+							nsrc, tsrc, ndst, tdst,
 							transport.EndpointType(),
-							tsrc, tdst,
 						)
 						str = append(str, 0)
 						fmt.Printf("%s", string(str[:count+1]))
@@ -60,8 +58,8 @@ func show_printable(pkt gopacket.Packet, matchlen int) {
 }
 
 func main() {
-	show_ver := flag.Bool("v", false, "Display version")
-	match_len := flag.Int("n", 4, "Number of consecutive printable characters")
+	var show_ver = flag.Bool("v", false, "Display version")
+	var match_len = flag.Int("n", 10, "Number of consecutive printable characters")
 
 	flag.Parse()
 
@@ -70,18 +68,20 @@ func main() {
 		return
 	}
 
-	if len(os.Args) < 2 {
-		fmt.Println("usage: gstrings <pcap> [-n 4]")
+	if len(flag.Args()) < 1 {
+		fmt.Println("usage: gstrings <pcap> [-n 10]")
 		return
 	}
 
-	fd, err := pcap.OpenOffline(os.Args[1])
+	fd, err := pcap.OpenOffline(flag.Args()[0])
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	pktSrc := gopacket.NewPacketSource(fd, fd.LinkType())
+
+	fmt.Printf("%d", match_len)
 
 	for pkt := range pktSrc.Packets() {
 		show_printable(pkt, *match_len)
